@@ -1,176 +1,7 @@
 import React from 'react';
-import { AppRegistry, Image} from 'react-native';
+import { AppRegistry, Image, WebView } from 'react-native';
 import { StyleSheet, SectionList, ScrollView, Button, Alert, Text, TextInput, View } from 'react-native';
-import {StackNavigator, DrawerNavigator, TabNavigator, DrawerItems } from 'react-navigation';
-
-//Launcher used so that it is possible to access other drawers
-class Launcher extends React.Component {
-  render() {
-    return (
-      <Text>Luke, I am your launcher</Text>
-    )
-  }
-}
-
-/*
-* The following screens are the specific screens used in each drawer
-* All of these screens call on the GenericScreen to display their info
-*/
-class TopStoriesScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Top Stories',
-  };
-
-  render() {
-    return (
-      <GenericScreen screenProps={title="top-stories"}/>
-    );
-  }
-}
-
-class BusinessScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Business',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/business"}/>
-    )
-  }
-}
-
-class EducationScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Education',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/education"}/>
-    )
-  }
-}
-
-class FinanceScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Finance',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/finance"}/>
-    )
-  }
-}
-
-class FoodBevScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Food & Beverage',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/food+&+beverage"}/>
-    )
-  }
-}
-
-class HealthCareScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Health Care',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/health+care"}/>
-    )
-  }
-}
-
-class MarketAdvertScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Marketing & Advertising',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/marketing+&+advertising"}/>
-    )
-  }
-}
-
-class RetailScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Retail',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/retail"}/>
-    )
-  }
-}
-
-class LifeSciencesScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Life Sciences & Technology',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/life+sciences+&+technology"}/>
-    )
-  }
-}
-
-class TelecomScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Telecom',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/telecom"}/>
-    )
-  }
-}
-
-class InfrastructureScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Infrastructure',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/infrastructure"}/>
-    )
-  }
-}
-
-class EnergyChemicalsScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Energy & Chemicals',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/energy+&+chemicals"}/>
-    )
-  }
-}
-
-class AviationAerospaceScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Aviation & Aerospace',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/aviation+&+aerospace"}/>
-    )
-  }
-}
-
-
-class TravelHospitalityScreen extends React.Component {
-  static navigationOptions = {
-    drawerLabel: 'Travel & Hospitality',
-  };
-  render() {
-    return (
-      <GenericScreen screenProps={title="industry/travel+&+hospitality"}/>
-    )
-  }
-}
+import {StackNavigator, DrawerNavigator, TabNavigator, DrawerItems, NavigationActions } from 'react-navigation';
 
 /* GenericScreen
 *  A generic screen that each of the specific screens use to display data
@@ -178,115 +9,207 @@ class TravelHospitalityScreen extends React.Component {
 *     Then inserts each individual story into the stories array
 */
 class GenericScreen extends React.Component {
-  state = {
-  	stories: [
-				{ headline: "",
-    		  summary: "",
-    		  date: "",
-          image_url: "" },
-		],
-  };
-  newStory = (storyInfo) => {
-  	this.setState(prevState => ({
-    	stories: storyInfo
-    }))
-  };
-  fetchData = () => {
+    constructor() {
+        super();
+        
+        this.state = {
+            stories: [],
+            fetching: false
+        }
+    }
+  static navigationOptions = ({navigation}) => ({headerLeft: <Button onPress={() => navigation.navigate('DrawerOpen')} title="Open" />, headerStyle: {backgroundColor: '#247FB6', height: 60, }}) 
+  sortByDate(stories){
+        return stories.sort( (a, b) => b.order - a.order);
+  }
+  fetchData()  {
     var _this = this;
-  fetch(`http://www.smartbrief.com/endpoint/${this.props.screenProps}`)
+  fetch(`http://www.smartbrief.com/endpoint/${this.props.navigation.state.routeName}`)
       .then(function(response){
         return response.json();
 
       })
+      .then(this.sortByDate)
       .then(function(data) { 
-      	  _this.newStory(data);
+      	  _this.setState({
+            
+            stories: data
+          });
     })
   }
   render() {
+    const { navigate } = this.props.navigation;
     this.fetchData();
     return (
-        <StoryList  stories={this.state.stories}/>
+      
+      <ScrollView>
+        {
+          this.state.stories.map( (story, index) => {
+          return <Story key={index} story={story} clickHandler={ () => navigate('FullBriefScreen', {image_url: story.image_url, headline: story.headline, summary: story.summary, url: story.source[0].url})}  />})
+        }
+      </ScrollView>
     )
   }
 }
 
-//displays the information for each story: the headline, the date and the summary
-const Story = (props) => {
-  if (props.image_url.length) {
+class FullBriefScreen extends React.Component {
+  static navigationOptions = ({navigation}) => ({headerStyle: {backgroundColor: '#247FB6', height: 60}}) 
+  render() {
+    const { params } = this.props.navigation.state;
+    const { navigate } = this.props.navigation;
+    return (
+      <FullBrief headline={params.headline} image_url={params.image_url} summary={params.summary} clickHandler={ () => navigate('WebViewScreen', {url: params.url})} />
+    )
+  }
+}
+
+class WebViewScreen extends React.Component {
+  render() {
+    const { params } = this.props.navigation.state;
+    return (
+      <WebView
+        source={{uri: params.url}}
+        style={{marginTop: 20}}
+      />
+    );
+  }
+}
+
+//displays the information for each story: the headline, the image and the summary
+const Story = ({story, clickHandler = f => f}) => {
+  if (story.image_url.length) {
     	return (
-  <View style={styles.outerStyle}> 
-    <View style={{flexDirection: 'row', flex: 1,}}>      
-       
-  	    <Text style={styles.headerStyle}>{props.headline}</Text> 
-        <Image source={{uri: props.image_url}} style={styles.imageStyle} />
+  <View style={styles.outerStyle} > 
+    <View style={{flexDirection: 'row', flex: 1}}>      
+  	    <Text style={styles.headerStyle} onPress={clickHandler}>{story.headline}</Text> 
+        <Image source={{uri: story.image_url}} style={styles.imageStyle} />
     </View>
-      <Text style={styles.summaryStyle}>{props.summary}</Text>
+      <Text style={styles.summaryStyle} onPress={clickHandler}>{story.summary.substring(3, 80).concat('...')}</Text>
   </View>
   )
   } else {
 	return (
-  <View style={styles.outerStyle}>       
-  	  <Text style={styles.headerStyle}>{props.headline}</Text>
-      <Text style={styles.summaryStyle}>{props.summary}</Text>
+  <View style={styles.outerStyle} >       
+  	  <Text style={styles.headerStyle} onPress={clickHandler}>{story.headline}</Text>
+      <Text style={styles.summaryStyle} onPress={clickHandler}>{story.summary.substring(3, 80).concat('...')}</Text>
   </View>
   )
   }
 
 };
 
-//creates a list of all of the stories
-const StoryList = (props) => {
-	return(
-    <View>
-  	  <ScrollView>{props.stories.map((story, index)=><Story key={index} {...story} />)}</ScrollView>
-    </View>
+const FullBrief = (props) => {
+  if (props.image_url.length) {
+    	return (
+        <ScrollView>
+          <Image style={{height: 200, width: 450}} source={{uri: props.image_url}} />
+  <View style={styles.outerStyle} >   
+          
+  	    <Text style={{fontWeight: '300', fontSize: 25, color: '#097ABF'}} onPress={props.clickHandler}>{props.headline}</Text> 
+        <Text style={{fontSize: 18,color: '#666', lineHeight: 20}} onPress={props.clickHandler}>{props.summary.substring(3, (props.summary.length - 5))}</Text>
+  </View>
+  </ScrollView>
   )
+  } else {
+	return (
+  <View style={styles.outerStyle} >       
+  	  <Text style={{fontWeight: '300', fontSize: 25, color: '#097ABF',}} onPress={props.clickHandler}>{props.headline}</Text>
+      <Text style={{fontSize: 18,color: '#666', lineHeight: 20}} onPress={props.clickHandler}>{props.summary.substring(3, (props.summary.length - 5))}</Text>
+  </View>
+  )
+  }
+  
 }
 
-const Application =  DrawerNavigator({
 /* Application consists of a Drawer Navigator, which will allow for the sidebar menu that is found in the app
-*   Each selection in the sidebar has its own entry in the drawer
+*   Each selection in the sidebar has its own entry in the drawerNavigator
 *     These entries are a Stack Navgator, to allow the user to travel back and forth between screens easily
 *
-* (launcher is simply there to aid in development, will not be in final build.) 
 */
-    launcher: { screen: Launcher },
-    TopStories: {screen: StackNavigator({ 
-        BaseTopStoriesScreen: {screen: TopStoriesScreen} })},
+const Application =  DrawerNavigator({
+      'Top Stories': {screen: StackNavigator({ 
+        'top-stories': {screen: GenericScreen}, 
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+    })},
     Business: {screen: StackNavigator({ 
-        BaseBusinessScreen: {screen: BusinessScreen} })},
+        'industry/business': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
+    Tech: {screen: StackNavigator({
+      'industry/tech': {screen: GenericScreen}, 
+      FullBriefScreen: {screen: FullBriefScreen},
+      WebViewScreen: {screen: WebViewScreen},
+  })},
     Education: {screen: StackNavigator({ 
-        BaseEducationScreen: {screen: EducationScreen} })},
+        'industry/education': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
     Finance: {screen: StackNavigator({ 
-        BaseFinanceScreen: {screen: FinanceScreen} })},
-    FoodBev: {screen: StackNavigator({ 
-        BaseFoodBevScreen: {screen: FoodBevScreen} })},
-    HealthCare: {screen: StackNavigator({ 
-        BaseHealthCareScreen: {screen: HealthCareScreen} })},
-    MarketAdvert: {screen: StackNavigator({ 
-        BaseMarketAdvertScreen: {screen: MarketAdvertScreen } })},
+        'industry/finance': {screen: GenericScreen}, 
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+    })},
+    'Food & Beverage': {screen: StackNavigator({ 
+        'industry/food+&+beverage': {screen: GenericScreen}, 
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+    })},
+    'Health Care': {screen: StackNavigator({ 
+        'industry/health+care': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
+    'Marketing & Advertising': {screen: StackNavigator({ 
+        'industry/marketing+&+advertising': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
     Retail: {screen: StackNavigator({ 
-        BaseRetailScreen: {screen: RetailScreen } })},
-    LifeSciences: {screen: StackNavigator({ 
-        BaseLifeSciencesScreen: {screen: LifeSciencesScreen } })},
+        'industry/retail': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
+    'Life Sciences & Technology': {screen: StackNavigator({ 
+        'industry/life+sciences+&+technology': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
     Telecom: {screen: StackNavigator({ 
-        BaseTelecomScreen: {screen: TelecomScreen } })},
+        'industry/telecom': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
     Infrastructure: {screen: StackNavigator({ 
-        BaseInfrastructureScreen: {screen: InfrastructureScreen } })},
-    EnergyChemicals: {screen: StackNavigator({ 
-        BaseEnergyChemicalsScreen: {screen: EnergyChemicalsScreen } })},
-    AviationAerospace: {screen: StackNavigator({ 
-        BaseAviationAerospaceScreen: {screen: AviationAerospaceScreen } })},
-    TravelHospitality: {screen: StackNavigator({ 
-        BaseTravelHospitalityScreen: {screen: TravelHospitalityScreen } })},
-    MyAccount: {screen: StackNavigator({ 
-        BaseMyAccountScreen: {screen: Launcher } })},
+        'industry/infrastructure': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+        
+     })},
+    'Energy & Chemicals': {screen: StackNavigator({ 
+        'industry/energy+&+chemicals': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
+    'Aviation & Aerospace': {screen: StackNavigator({ 
+        'industry/aviation+&+aerospace': {screen: GenericScreen},
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
+    'Travel & Hospitality': {screen: StackNavigator({ 
+        BaseTravelHospitalityScreen: {screen: GenericScreen, },
+        FullBriefScreen: {screen: FullBriefScreen},
+        WebViewScreen: {screen: WebViewScreen},
+     })},
 }, {
-    contentComponent: props => <ScrollView><DrawerItems {...props} /></ScrollView>
+  drawerWidth: 250,
+    contentComponent: props => <ScrollView><DrawerItems {...props} /></ScrollView>,
   }
 )
+ 
 
-
+//export of app
 export default class App extends React.Component { 
   render() {
     return (
@@ -301,8 +224,8 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 22,
+    backgroundColor: '#247FB6',
+    paddingTop: 5,
     
   },
   storyStyles: {
@@ -316,7 +239,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     paddingRight: 10,
-    paddingLeft: 10,
+    paddingLeft: 20,
     backgroundColor: '#fff',
   },
   headerStyle: {
@@ -358,3 +281,4 @@ const styles = StyleSheet.create({
     height: 44,
   },
 });
+AppRegistry.registerComponent('SBapp', () => SeansApp);
